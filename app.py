@@ -54,7 +54,7 @@ class ImageData(BaseModel):
 @app.get("/")
 def home():
     return {
-        "status": "AI NSFW API Running"
+        "status": "NSFW API Running"
     }
 
 # =========================
