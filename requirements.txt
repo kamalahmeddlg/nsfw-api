@@ -1,4 +1,9 @@
 fastapi
 uvicorn
+tensorflow
+gdown
 pydantic
 python-multipart
+pillow
+numpy
+requests
