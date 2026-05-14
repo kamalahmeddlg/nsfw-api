@@ -2,9 +2,36 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+import tensorflow as tf
+import gdown
+import os
+
+# =========================
+# DOWNLOAD MODEL
+# =========================
+
+MODEL_PATH = "model.keras"
+
+if not os.path.exists(MODEL_PATH):
+
+    url = "https://drive.google.com/uc?id=1oCwWNIij0gtoXbnmdehefi4tfO1QGU_U"
+
+    gdown.download(url, MODEL_PATH, quiet=False)
+
+# =========================
+# LOAD MODEL
+# =========================
+
+model = tf.keras.models.load_model(MODEL_PATH)
+
+print("Model Loaded Successfully")
+
+# =========================
+# FASTAPI
+# =========================
+
 app = FastAPI()
 
-# CORS Fix
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,34 +40,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Request Model
+# =========================
+# REQUEST MODEL
+# =========================
+
 class ImageData(BaseModel):
     image_url: str
 
-# Home Route
+# =========================
+# HOME
+# =========================
+
 @app.get("/")
 def home():
-    return {"status": "NSFW API Running"}
+    return {
+        "status": "AI NSFW API Running"
+    }
 
-# Predict Route
+# =========================
+# PREDICT
+# =========================
+
 @app.post("/predict")
 async def predict(data: ImageData):
 
     image_url = data.image_url
 
-    # Dummy Prediction
-    # Replace later with real AI model
+    # Temporary prediction
+    # Real prediction later
 
-    nsfw = False
-
-    keywords = ["porn", "nude", "xxx", "adult"]
-
-    for word in keywords:
-        if word in image_url.lower():
-            nsfw = True
+    result = False
 
     return {
         "success": True,
-        "nsfw": nsfw,
+        "nsfw": result,
         "image": image_url
     }
