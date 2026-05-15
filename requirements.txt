@@ -1,9 +1,11 @@
 fastapi==0.115.12
 uvicorn==0.34.2
-tensorflow-cpu==2.15.0
+tensorflow==2.15.0
 gdown
 pydantic
 python-multipart
 pillow
 numpy==1.26.4
 requests
+h5py
+protobuf==3.20.3
