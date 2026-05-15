@@ -1,6 +1,8 @@
+import sys
 import os
 import io
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -48,6 +50,7 @@ logger = logging.getLogger("nsfw-api")
 # ------------------------------------------------------------
 model: Optional[tf.keras.Model] = None
 
+
 def download_model() -> None:
     """Download the model if not present, with basic retry logic."""
     if os.path.exists(MODEL_PATH):
@@ -64,9 +67,23 @@ def download_model() -> None:
 
 
 def load_model() -> tf.keras.Model:
-    """Load the Keras model from disk."""
+    """
+    Load the Keras model from disk.
+    Patches the missing module 'keras.src.models.functional' if needed.
+    """
     if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(f"Model file not found at {MODEL_PATH}")
+
+    # Patch for compatibility: the saved model references keras.src.models.functional
+    # which may not exist in the current tf.keras version.
+    if "keras.src.models.functional" not in sys.modules:
+        try:
+            sys.modules["keras.src.models.functional"] = tf.keras.engine.functional
+        except AttributeError:
+            # Standalone Keras 3 fallback (adjust if needed)
+            from keras.src.models import functional as functional_module
+            sys.modules["keras.src.models.functional"] = functional_module
+
     logger.info("Loading TensorFlow model from %s ...", MODEL_PATH)
     return tf.keras.models.load_model(MODEL_PATH)
 
@@ -88,7 +105,7 @@ async def lifespan(app: FastAPI):
 
     yield  # application runs here
 
-    # Cleanup on shutdown (if needed)
+    # Cleanup on shutdown
     logger.info("Shutting down, clearing model...")
     model = None
 
@@ -128,7 +145,7 @@ class PredictionResponse(BaseModel):
 
 
 # ------------------------------------------------------------
-# Utility: async image preprocessing (runs in default executor)
+# Utility: async image preprocessing
 # ------------------------------------------------------------
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
     """
