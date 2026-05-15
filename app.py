@@ -1,10 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 import tensorflow as tf
 import gdown
 import os
+import numpy as np
+from PIL import Image
+import io
 
 # =========================
 # DOWNLOAD MODEL
@@ -41,13 +43,6 @@ app.add_middleware(
 )
 
 # =========================
-# REQUEST MODEL
-# =========================
-
-class ImageData(BaseModel):
-    image_url: str
-
-# =========================
 # HOME
 # =========================
 
@@ -62,17 +57,29 @@ def home():
 # =========================
 
 @app.post("/predict")
-async def predict(data: ImageData):
+async def predict(file: UploadFile = File(...)):
 
-    image_url = data.image_url
+    # Read uploaded image
+    contents = await file.read()
 
-    # Temporary prediction
-    # Real prediction later
+    # Open image
+    image = Image.open(io.BytesIO(contents)).convert("RGB")
 
-    result = False
+    # Resize image
+    image = image.resize((224, 224))
+
+    # Convert image to array
+    img_array = np.array(image) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+
+    # Prediction
+    prediction = model.predict(img_array)[0][0]
+
+    # Result
+    result = prediction > 0.5
 
     return {
         "success": True,
-        "nsfw": result,
-        "image": image_url
+        "nsfw": bool(result),
+        "confidence": float(prediction)
     }
